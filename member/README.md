@@ -1,1 +1,1 @@
-this folder contains the member application
+this folder contains the member mvn project
