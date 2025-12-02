@@ -1,6 +1,7 @@
 package com.example.product.service.impl;
 
 import com.example.product.dto.request.ProductDTO;
+import com.example.product.exception.ProductNotFoundException;
 import com.example.product.repository.ProductRepository;
 import com.example.product.service.ProductService;
 import com.example.product.utils.DTOUtils;
@@ -36,7 +37,7 @@ public class ProductServiceImpl
     public ProductDTO getProduct(ObjectId id) {
         return productRepository.findById(id)
                 .map(DTOUtils::getDTO)
-                .orElse(null);
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + id));
     }
 
     @Override
@@ -64,6 +65,14 @@ public class ProductServiceImpl
     @Override
     public List<ProductDTO> searchProducts(String productName, String category, Pageable pageable) {
         return productRepository.findByProductNameAndCategory(productName, category, pageable)
+                .stream()
+                .map(DTOUtils::getDTO)
+                .toList();
+    }
+
+    @Override
+    public List<ProductDTO> getAllProducts(Pageable pageable) {
+        return productRepository.findAll(pageable)
                 .stream()
                 .map(DTOUtils::getDTO)
                 .toList();

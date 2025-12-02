@@ -16,4 +16,7 @@ public interface ProductService {
     // implement search level PLP to get the products
     List<ProductDTO> searchProducts(String productName, Pageable pageable);
     List<ProductDTO> searchProducts(String productName, String category, Pageable pageable);
+    
+    // Get all products with pagination
+    List<ProductDTO> getAllProducts(Pageable pageable);
 }

@@ -12,6 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductDTO {
+    private String productId;
     @NotNull(message = "Product name cannot be null")
     private String productName;
 

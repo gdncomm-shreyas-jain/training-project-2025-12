@@ -16,6 +16,10 @@ public final class DTOUtils {
     public static ProductDTO getDTO(Product srcProduct) {
         ProductDTO targetDTO = new ProductDTO();
         BeanUtils.copyProperties(srcProduct, targetDTO);
+        // Map productId from ObjectId to String
+        if (srcProduct.getProductId() != null) {
+            targetDTO.setProductId(srcProduct.getProductId().toString());
+        }
         log.debug("getDTO():: srcProduct - {}, targetDTO - {}", srcProduct, targetDTO);
         return targetDTO;
     }
