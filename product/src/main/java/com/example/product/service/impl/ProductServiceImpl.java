@@ -5,6 +5,7 @@ import com.example.product.exception.ProductNotFoundException;
 import com.example.product.repository.ProductRepository;
 import com.example.product.service.ProductService;
 import com.example.product.utils.DTOUtils;
+import com.example.product.utils.SearchUtils;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.domain.Pageable;
@@ -56,7 +57,9 @@ public class ProductServiceImpl
     // Indexed + override section
     @Override
     public List<ProductDTO> searchProducts(String productName, Pageable pageable) {
-        return productRepository.findByProductName(productName, pageable)
+        // Convert wildcard pattern to regex
+        String regexPattern = SearchUtils.convertWildcardToRegex(productName);
+        return productRepository.findByProductName(regexPattern, pageable)
                 .stream()
                 .map(DTOUtils::getDTO)
                 .toList();
@@ -64,7 +67,9 @@ public class ProductServiceImpl
 
     @Override
     public List<ProductDTO> searchProducts(String productName, String category, Pageable pageable) {
-        return productRepository.findByProductNameAndCategory(productName, category, pageable)
+        // Convert wildcard pattern to regex
+        String regexPattern = SearchUtils.convertWildcardToRegex(productName);
+        return productRepository.findByProductNameAndCategory(regexPattern, category, pageable)
                 .stream()
                 .map(DTOUtils::getDTO)
                 .toList();

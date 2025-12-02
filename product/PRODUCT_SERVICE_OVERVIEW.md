@@ -33,7 +33,7 @@ The Product Service is a RESTful microservice built with Spring Boot that provid
 - ✅ **Product Listing** - View all products with pagination support
 - ✅ **Product Details** - Retrieve detailed information for a specific product by ID
 - ✅ **Pagination** - All list endpoints support pagination with configurable page size
-- ✅ **Wildcard Search Support** - Search functionality supports flexible pattern matching
+- ✅ **Wildcard Search Support** - Search functionality supports flexible pattern matching with `*` (any sequence) and `?` (single character) wildcards
 
 ### Technical Features
 - RESTful API design
@@ -109,12 +109,17 @@ http://localhost:8085/api/product
 ### 1. Search Products by Name (with optional category)
 **Endpoint:** `GET /getByName`
 
-**Description:** Search products by name with optional category filter. Supports case-insensitive partial matching.
+**Description:** Search products by name with optional category filter. Supports case-insensitive partial matching and wildcard pattern matching.
+
+**Wildcard Support:**
+- `*` (asterisk) - Matches any sequence of characters (zero or more)
+- `?` (question mark) - Matches any single character
+- Other regex special characters are automatically escaped
 
 **Query Parameters:**
 | Parameter | Type | Required | Description | Example |
 |-----------|------|----------|-------------|---------|
-| `productName` | String | Yes | Product name to search (case-insensitive, partial match) | "laptop" |
+| `productName` | String | Yes | Product name to search (case-insensitive, supports wildcards: * and ?) | "laptop", "lap*", "*phone", "lap?op" |
 | `category` | String | No | Category filter (optional) | "electronics" |
 | `startIndex` | int | Yes | Zero-based page index | 0 |
 | `size` | int | Yes | Number of items per page | 10 |
@@ -123,6 +128,9 @@ http://localhost:8085/api/product
 ```http
 GET /api/product/getByName?productName=laptop&startIndex=0&size=10
 GET /api/product/getByName?productName=laptop&category=electronics&startIndex=0&size=10
+GET /api/product/getByName?productName=lap*&startIndex=0&size=10
+GET /api/product/getByName?productName=*phone&startIndex=0&size=10
+GET /api/product/getByName?productName=lap?op&startIndex=0&size=10
 ```
 
 **Response:** `200 OK`
@@ -388,6 +396,18 @@ curl "http://localhost:8085/api/product/getByName?productName=laptop&startIndex=
 curl "http://localhost:8085/api/product/getByName?productName=laptop&category=electronics&startIndex=0&size=10"
 ```
 
+**Search with wildcards:**
+```bash
+# Search for products starting with "lap"
+curl "http://localhost:8085/api/product/getByName?productName=lap*&startIndex=0&size=10"
+
+# Search for products ending with "phone"
+curl "http://localhost:8085/api/product/getByName?productName=*phone&startIndex=0&size=10"
+
+# Search with single character wildcard (e.g., "lap?op" matches "laptop", "lapstop")
+curl "http://localhost:8085/api/product/getByName?productName=lap?op&startIndex=0&size=10"
+```
+
 **Get product by ID:**
 ```bash
 curl "http://localhost:8085/api/product/507f1f77bcf86cd799439011"
@@ -407,10 +427,12 @@ curl "http://localhost:8085/api/product/507f1f77bcf86cd799439011"
 ### Repository
 - **ProductRepository** - MongoDB repository with custom query methods
 - Uses MongoDB regex queries for case-insensitive partial matching
+- Supports wildcard pattern conversion through SearchUtils
 
 ### Utilities
 - **DTOUtils** - Converts between Entity and DTO objects
 - Handles ObjectId to String conversion for API responses
+- **SearchUtils** - Converts wildcard search patterns (* and ?) to MongoDB regex patterns
 
 ### Exception Handling
 - **GlobalExceptionHandler** - Centralized exception handling
@@ -421,13 +443,10 @@ curl "http://localhost:8085/api/product/507f1f77bcf86cd799439011"
 ## Future Enhancements
 
 Potential improvements for the service:
-- [ ] Add pagination metadata (total count, total pages, etc.) to responses
-- [ ] Implement wildcard search pattern conversion (* and ? support)
-- [ ] Add filtering and sorting options
+- [ ] Add more TDD driven unit and integration tests
+- [ ] filtering? sorting?
 - [ ] Implement caching for frequently accessed products
 - [ ] Add product creation, update, and delete endpoints
-- [ ] Add authentication and authorization
-- [ ] Implement rate limiting
-- [ ] Add comprehensive unit and integration tests
+
 
 
