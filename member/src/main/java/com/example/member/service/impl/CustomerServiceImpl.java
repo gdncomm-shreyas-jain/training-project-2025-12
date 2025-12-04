@@ -31,11 +31,15 @@ public class CustomerServiceImpl implements CustomerService {
             throw new RuntimeException("Email already exists");
         }
 
+        // Check if username already exists
+        if (customerRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Username already exists");
+        }
+
         Customer customer = Customer.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .firstName(request.getFirstName())
-                .lastName(request.getLastName())
+                .username(request.getUsername())
                 .build();
 
         customer = customerRepository.save(customer);
@@ -45,8 +49,7 @@ public class CustomerServiceImpl implements CustomerService {
         return AuthResponse.builder()
                 .token(token)
                 .email(customer.getEmail())
-                .firstName(customer.getFirstName())
-                .lastName(customer.getLastName())
+                .username(customer.getUsername())
                 .message("Registration successful")
                 .build();
     }
@@ -67,8 +70,7 @@ public class CustomerServiceImpl implements CustomerService {
         return AuthResponse.builder()
                 .token(token)
                 .email(customer.getEmail())
-                .firstName(customer.getFirstName())
-                .lastName(customer.getLastName())
+                .username(customer.getUsername())
                 .message("Login successful")
                 .build();
     }

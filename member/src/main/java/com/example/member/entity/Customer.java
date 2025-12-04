@@ -26,11 +26,8 @@ public class Customer {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
-    private String firstName;
-
-    @Column(nullable = false)
-    private String lastName;
+    @Column(unique = true, nullable = false)
+    private String username;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
