@@ -74,8 +74,28 @@ public class UserValidationGatewayFilterFactory extends AbstractGatewayFilterFac
                         String status = (String) responseMap.get("status");
                         if ("valid".equals(status)) {
                             logger.debug("User validation successful for request to {}", request.getURI().getPath());
-                            // User is valid, proceed with the request
-                            return chain.filter(exchange);
+                            
+                            // Extract user ID from validation response and add as header
+                            Object userIdObj = responseMap.get("userId");
+                            if (userIdObj != null) {
+                                String userId = userIdObj.toString();
+                                logger.debug("Adding X-User-Id header: {}", userId);
+                                
+                                // Mutate the request to add X-User-Id header
+                                ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                                        .header("X-User-Id", userId)
+                                        .build();
+                                
+                                ServerWebExchange mutatedExchange = exchange.mutate()
+                                        .request(mutatedRequest)
+                                        .build();
+                                
+                                return chain.filter(mutatedExchange);
+                            } else {
+                                logger.warn("User ID not found in validation response for request to {}", request.getURI().getPath());
+                                // Proceed without X-User-Id header if not available
+                                return chain.filter(exchange);
+                            }
                         } else {
                             String message = (String) responseMap.getOrDefault("message", "User validation failed");
                             logger.warn("User validation failed: {}", message);

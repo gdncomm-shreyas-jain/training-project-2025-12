@@ -41,7 +41,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/member/register", "/api/member/login").permitAll()
+                        .requestMatchers("/api/member/register", "/api/member/login", "/api/member/validate").permitAll()
                         .requestMatchers("/api/product/**").permitAll()
                         // If you do not want to expose the swagger-ui, you can comment out the following line
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()

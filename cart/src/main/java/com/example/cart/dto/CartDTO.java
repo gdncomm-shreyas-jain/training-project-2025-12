@@ -6,15 +6,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.bson.types.ObjectId;
 
+import java.io.Serializable;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CartDTO {
-    private ObjectId id;
-
+public class CartDTO implements Serializable {
+    private UUID id;
     @Positive(message = "total price cannot be negative")
     private Double totalPrice;
-    List<ProductDTO> cartItems;
+    private transient List<ProductDTO> cartItems;
 }

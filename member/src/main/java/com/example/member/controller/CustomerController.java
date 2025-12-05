@@ -3,6 +3,8 @@ package com.example.member.controller;
 import com.example.member.dto.AuthResponse;
 import com.example.member.dto.LoginRequest;
 import com.example.member.dto.RegisterRequest;
+import com.example.member.entity.Customer;
+import com.example.member.repository.CustomerRepository;
 import com.example.member.service.CustomerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -28,6 +30,7 @@ import java.util.Map;
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final CustomerRepository customerRepository;
 
     @Operation(summary = "Register a new customer")
     @ApiResponse(responseCode = "200", description = "Registration successful",
@@ -56,15 +59,35 @@ public class CustomerController {
     @ApiResponse(responseCode = "401", description = "Token is invalid or expired")
     @GetMapping("/validate")
     public ResponseEntity<Map<String, Object>> validateToken(Authentication authentication) {
-        log.debug("Token validation request");
+        log.debug("Token validation request - authentication: {}", authentication != null ? authentication.getName() : "null");
         
         if (authentication != null && authentication.isAuthenticated()) {
+            String email = authentication.getName(); // JWT subject is email
+            log.debug("Authenticated user email: {}", email);
+            
+            // Look up customer to get user ID
+            Customer customer = customerRepository.findByEmail(email)
+                    .orElse(null);
+            
+            if (customer == null) {
+                log.warn("Customer not found for email: {}", email);
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "invalid");
+                response.put("message", "Customer not found for authenticated user");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+            
+            log.debug("Found customer with ID: {} for email: {}", customer.getId(), email);
+            
             Map<String, Object> response = new HashMap<>();
             response.put("status", "valid");
             response.put("message", "Token is valid");
-            response.put("username", authentication.getName());
+            response.put("username", customer.getUsername());
+            response.put("email", customer.getEmail());
+            response.put("userId", customer.getId());
             return ResponseEntity.ok(response);
         } else {
+            log.warn("Authentication failed - authentication is null or not authenticated");
             Map<String, Object> response = new HashMap<>();
             response.put("status", "invalid");
             response.put("message", "Token is invalid or expired");

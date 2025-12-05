@@ -1,17 +1,14 @@
-package com.example.cart.dto.response;
+package com.example.open_marketplace_command.dto.cart;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class GenericResponseListDTO<T> {
+public class GenericResponseSingleDTO {
     private Integer statusCode;
     private String statusMessage;
-    private List<T> response;
+    private CartDTO response;
 }
-

@@ -34,18 +34,7 @@ public final class SearchUtils {
                 case '?':
                     regex.append(".");
                     break;
-                case '.':
-                case '^':
-                case '$':
-                case '+':
-                case '(':
-                case ')':
-                case '[':
-                case ']':
-                case '{':
-                case '}':
-                case '|':
-                case '\\':
+                case '.', '^', '$', '+', '(', ')', '[', ']', '{', '}', '|', '\\':
                     regex.append("\\").append(c);
                     break;
                 default:

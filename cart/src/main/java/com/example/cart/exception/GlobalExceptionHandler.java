@@ -152,6 +152,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<GenericResponseSingleDTO<Map<String, String>>> handleProductNotFoundException(
+            ProductNotFoundException ex) {
+        log.warn("Product not found: {}", ex.getMessage());
+
+        Map<String, String> errors = new ConcurrentHashMap<>();
+        errors.put(ERROR_KEY, ex.getMessage());
+
+        GenericResponseSingleDTO<Map<String, String>> response = new GenericResponseSingleDTO<>(
+                HttpStatus.NOT_FOUND.value(),
+                "Product not found",
+                errors
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<GenericResponseSingleDTO<Map<String, String>>> handleGenericException(Exception ex) {
         log.error("Unexpected error occurred: ", ex);

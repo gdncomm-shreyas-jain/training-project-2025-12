@@ -1,6 +1,7 @@
 package com.example.product.service.impl;
 
 import com.example.product.dto.request.ProductDTO;
+import com.example.product.entity.Product;
 import com.example.product.exception.ProductNotFoundException;
 import com.example.product.repository.ProductRepository;
 import com.example.product.service.ProductService;
@@ -52,6 +53,19 @@ public class ProductServiceImpl
     @Override
     public void deleteProduct(ObjectId id) {
         productRepository.deleteById(id);
+    }
+
+    @Override
+    public List<ProductDTO> bulkCreateProducts(List<ProductDTO> productDTOs) {
+        List<Product> entities = productDTOs.stream()
+                .map(DTOUtils::getEntity)
+                .toList();
+        
+        List<Product> savedProducts = productRepository.saveAll(entities);
+        
+        return savedProducts.stream()
+                .map(DTOUtils::getDTO)
+                .toList();
     }
 
     // Indexed + override section

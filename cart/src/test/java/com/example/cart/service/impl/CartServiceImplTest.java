@@ -1,10 +1,12 @@
 package com.example.cart.service.impl;
 
 import com.example.cart.dto.CartDTO;
-import com.example.cart.dto.ProductDTO;
+import com.example.cart.dto.response.GenericResponseSingleDTO;
+import com.example.cart.dto.response.ProductServiceResponse;
 import com.example.cart.entity.Cart;
 import com.example.cart.entity.Product;
 import com.example.cart.exception.CartNotFoundException;
+import com.example.cart.feign.ProductFeignClient;
 import com.example.cart.repository.CartRepository;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,30 +30,33 @@ class CartServiceImplTest {
     @Mock
     private CartRepository cartRepository;
 
+    @Mock
+    private ProductFeignClient productFeignClient;
+
     @InjectMocks
     private CartServiceImpl cartService;
 
-    private ObjectId cartId;
+    private UUID cartId;
     private Cart cart;
-    private ProductDTO productDTO;
+    private ProductServiceResponse productServiceResponse;
     private Product product;
     private static final String PRODUCT_ID = "PROD001";
     private static final String PRODUCT_ID_2 = "PROD002";
     private static final String PRODUCT_NAME = "Laptop";
     private static final String CATEGORY = "Electronics";
     private static final Double PRICE = 999.99;
-    private static final Integer QUANTITY = 2;
+    private static final Integer QUANTITY = 1; // Default quantity when adding from product service
 
     @BeforeEach
     void setUp() {
-        cartId = new ObjectId();
+        cartId = UUID.randomUUID();
         
-        productDTO = new ProductDTO();
-        productDTO.setProductId(PRODUCT_ID);
-        productDTO.setProductName(PRODUCT_NAME);
-        productDTO.setCategory(CATEGORY);
-        productDTO.setPrice(PRICE);
-        productDTO.setQuantity(QUANTITY);
+        productServiceResponse = new ProductServiceResponse();
+        productServiceResponse.setProductId(PRODUCT_ID);
+        productServiceResponse.setProductName(PRODUCT_NAME);
+        productServiceResponse.setCategory(CATEGORY);
+        productServiceResponse.setPrice(PRICE);
+        productServiceResponse.setDescription("High-performance laptop");
 
         product = new Product();
         product.setProductId(PRODUCT_ID);
@@ -70,7 +75,11 @@ class CartServiceImplTest {
     @DisplayName("Should add product to new cart successfully")
     void testAddProductToNewCart() {
         // Given
+        GenericResponseSingleDTO<ProductServiceResponse> feignResponse = new GenericResponseSingleDTO<>();
+        feignResponse.setResponse(productServiceResponse);
+        
         when(cartRepository.findById(cartId)).thenReturn(Optional.empty());
+        when(productFeignClient.getProductById(PRODUCT_ID)).thenReturn(feignResponse);
         when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> {
             Cart savedCart = invocation.getArgument(0);
             savedCart.setId(cartId);
@@ -78,7 +87,7 @@ class CartServiceImplTest {
         });
 
         // When
-        CartDTO result = cartService.addProductToCart(cartId, productDTO);
+        CartDTO result = cartService.addProductToCart(String.valueOf(cartId), PRODUCT_ID);
 
         // Then
         assertNotNull(result);
@@ -89,6 +98,7 @@ class CartServiceImplTest {
         assertEquals(PRICE * QUANTITY, result.getTotalPrice());
         
         verify(cartRepository, times(1)).findById(cartId);
+        verify(productFeignClient, times(1)).getProductById(PRODUCT_ID);
         verify(cartRepository, times(1)).save(any(Cart.class));
     }
 
@@ -106,11 +116,15 @@ class CartServiceImplTest {
         cart.setCartItems(new ArrayList<>(List.of(existingProduct)));
         cart.setTotalPrice(29.99);
 
+        GenericResponseSingleDTO<ProductServiceResponse> feignResponse = new GenericResponseSingleDTO<>();
+        feignResponse.setResponse(productServiceResponse);
+
         when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
+        when(productFeignClient.getProductById(PRODUCT_ID)).thenReturn(feignResponse);
         when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        CartDTO result = cartService.addProductToCart(cartId, productDTO);
+        CartDTO result = cartService.addProductToCart(String.valueOf(cartId), PRODUCT_ID);
 
         // Then
         assertNotNull(result);
@@ -118,6 +132,7 @@ class CartServiceImplTest {
         assertEquals(29.99 + (PRICE * QUANTITY), result.getTotalPrice());
         
         verify(cartRepository, times(1)).findById(cartId);
+        verify(productFeignClient, times(1)).getProductById(PRODUCT_ID);
         verify(cartRepository, times(1)).save(any(Cart.class));
     }
 
@@ -128,26 +143,25 @@ class CartServiceImplTest {
         cart.setCartItems(new ArrayList<>(Collections.singletonList(product)));
         cart.setTotalPrice(PRICE * QUANTITY);
 
-        ProductDTO additionalProduct = new ProductDTO();
-        additionalProduct.setProductId(PRODUCT_ID);
-        additionalProduct.setProductName(PRODUCT_NAME);
-        additionalProduct.setCategory(CATEGORY);
-        additionalProduct.setPrice(PRICE);
-        additionalProduct.setQuantity(3); // Adding 3 more
+        GenericResponseSingleDTO<ProductServiceResponse> feignResponse = new GenericResponseSingleDTO<>();
+        feignResponse.setResponse(productServiceResponse);
 
         when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
+        when(productFeignClient.getProductById(PRODUCT_ID)).thenReturn(feignResponse);
         when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        CartDTO result = cartService.addProductToCart(cartId, additionalProduct);
+        CartDTO result = cartService.addProductToCart(String.valueOf(cartId), PRODUCT_ID);
 
         // Then
         assertNotNull(result);
         assertEquals(1, result.getCartItems().size());
-        assertEquals(QUANTITY + 3, result.getCartItems().getFirst().getQuantity());
-        assertEquals(PRICE * (QUANTITY + 3), result.getTotalPrice());
+        // Product already has quantity 1, adding another with default quantity 1 = 2
+        assertEquals(2, result.getCartItems().getFirst().getQuantity());
+        assertEquals(PRICE * 2, result.getTotalPrice());
         
         verify(cartRepository, times(1)).findById(cartId);
+        verify(productFeignClient, times(1)).getProductById(PRODUCT_ID);
         verify(cartRepository, times(1)).save(any(Cart.class));
     }
 
@@ -161,7 +175,7 @@ class CartServiceImplTest {
         when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
 
         // When
-        CartDTO result = cartService.getCart(cartId);
+        CartDTO result = cartService.getCart(String.valueOf(cartId));
 
         // Then
         assertNotNull(result);
@@ -180,7 +194,7 @@ class CartServiceImplTest {
 
         // When & Then
         CartNotFoundException exception = assertThrows(CartNotFoundException.class, 
-                () -> cartService.getCart(cartId));
+                () -> cartService.getCart(String.valueOf(cartId)));
         
         assertEquals("Cart not found with id: " + cartId, exception.getMessage());
         verify(cartRepository, times(1)).findById(cartId);
@@ -204,7 +218,7 @@ class CartServiceImplTest {
         when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        CartDTO result = cartService.deleteProductFromCart(cartId, PRODUCT_ID);
+        CartDTO result = cartService.deleteProductFromCart(String.valueOf(cartId), PRODUCT_ID);
 
         // Then
         assertNotNull(result);
@@ -224,7 +238,7 @@ class CartServiceImplTest {
 
         // When & Then
         CartNotFoundException exception = assertThrows(CartNotFoundException.class, 
-                () -> cartService.deleteProductFromCart(cartId, PRODUCT_ID));
+                () -> cartService.deleteProductFromCart(String.valueOf(cartId), PRODUCT_ID));
         
         assertEquals("Cart not found with id: " + cartId, exception.getMessage());
         verify(cartRepository, times(1)).findById(cartId);
@@ -242,7 +256,7 @@ class CartServiceImplTest {
 
         // When & Then
         CartNotFoundException exception = assertThrows(CartNotFoundException.class, 
-                () -> cartService.deleteProductFromCart(cartId, "NON_EXISTENT_PRODUCT"));
+                () -> cartService.deleteProductFromCart(String.valueOf(cartId), "NON_EXISTENT_PRODUCT"));
         
         assertEquals("Product not found in cart with productId: NON_EXISTENT_PRODUCT", exception.getMessage());
         verify(cartRepository, times(1)).findById(cartId);
@@ -260,7 +274,7 @@ class CartServiceImplTest {
 
         // When & Then
         CartNotFoundException exception = assertThrows(CartNotFoundException.class, 
-                () -> cartService.deleteProductFromCart(cartId, PRODUCT_ID));
+                () -> cartService.deleteProductFromCart(String.valueOf(cartId), PRODUCT_ID));
         
         assertEquals("Product not found in cart with productId: " + PRODUCT_ID, exception.getMessage());
         verify(cartRepository, times(1)).findById(cartId);
@@ -274,11 +288,15 @@ class CartServiceImplTest {
         cart.setCartItems(null);
         cart.setTotalPrice(0.0);
 
+        GenericResponseSingleDTO<ProductServiceResponse> feignResponse = new GenericResponseSingleDTO<>();
+        feignResponse.setResponse(productServiceResponse);
+
         when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
+        when(productFeignClient.getProductById(PRODUCT_ID)).thenReturn(feignResponse);
         when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        CartDTO result = cartService.addProductToCart(cartId, productDTO);
+        CartDTO result = cartService.addProductToCart(String.valueOf(cartId), PRODUCT_ID);
 
         // Then
         assertNotNull(result);
@@ -287,6 +305,7 @@ class CartServiceImplTest {
         assertEquals(PRICE * QUANTITY, result.getTotalPrice());
         
         verify(cartRepository, times(1)).findById(cartId);
+        verify(productFeignClient, times(1)).getProductById(PRODUCT_ID);
         verify(cartRepository, times(1)).save(any(Cart.class));
     }
 
@@ -307,24 +326,30 @@ class CartServiceImplTest {
         cart.setCartItems(new ArrayList<>(Arrays.asList(product1, product2)));
         cart.setTotalPrice(0.0); // Will be recalculated
 
+        ProductServiceResponse newProductResponse = new ProductServiceResponse();
+        newProductResponse.setProductId("PROD003");
+        newProductResponse.setPrice(25.0);
+        newProductResponse.setProductName("Keyboard");
+        newProductResponse.setCategory(CATEGORY);
+
+        GenericResponseSingleDTO<ProductServiceResponse> feignResponse = new GenericResponseSingleDTO<>();
+        feignResponse.setResponse(newProductResponse);
+
         when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
+        when(productFeignClient.getProductById("PROD003")).thenReturn(feignResponse);
         when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        ProductDTO newProduct = new ProductDTO();
-        newProduct.setProductId("PROD003");
-        newProduct.setPrice(25.0);
-        newProduct.setQuantity(4);
-
         // When
-        CartDTO result = cartService.addProductToCart(cartId, newProduct);
+        CartDTO result = cartService.addProductToCart(String.valueOf(cartId), "PROD003");
 
         // Then
         assertNotNull(result);
         assertEquals(3, result.getCartItems().size());
-        // Total: (100 * 2) + (50 * 3) + (25 * 4) = 200 + 150 + 100 = 450
-        assertEquals(450.0, result.getTotalPrice());
+        // Total: (100 * 2) + (50 * 3) + (25 * 1) = 200 + 150 + 25 = 375
+        assertEquals(375.0, result.getTotalPrice());
         
         verify(cartRepository, times(1)).findById(cartId);
+        verify(productFeignClient, times(1)).getProductById("PROD003");
         verify(cartRepository, times(1)).save(any(Cart.class));
     }
 
@@ -339,7 +364,7 @@ class CartServiceImplTest {
         when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        CartDTO result = cartService.deleteProductFromCart(cartId, PRODUCT_ID);
+        CartDTO result = cartService.deleteProductFromCart(String.valueOf(cartId), PRODUCT_ID);
 
         // Then
         assertNotNull(result);
@@ -360,7 +385,7 @@ class CartServiceImplTest {
         when(cartRepository.findById(cartId)).thenReturn(Optional.of(cart));
 
         // When
-        CartDTO result = cartService.getCart(cartId);
+        CartDTO result = cartService.getCart(String.valueOf(cartId));
 
         // Then
         assertNotNull(result);
@@ -368,6 +393,27 @@ class CartServiceImplTest {
         assertEquals(0.0, result.getTotalPrice());
         
         verify(cartRepository, times(1)).findById(cartId);
+    }
+
+
+    @Test
+    @DisplayName("Should throw IllegalArgumentException when product response is null")
+    void testAddProductWhenProductResponseIsNull() {
+        // Given
+        GenericResponseSingleDTO<ProductServiceResponse> feignResponse = new GenericResponseSingleDTO<>();
+        feignResponse.setResponse(null);
+
+        when(cartRepository.findById(cartId)).thenReturn(Optional.empty());
+        when(productFeignClient.getProductById(PRODUCT_ID)).thenReturn(feignResponse);
+
+        // When & Then
+        // BeanUtils.copyProperties throws IllegalArgumentException when source is null
+        assertThrows(IllegalArgumentException.class, 
+                () -> cartService.addProductToCart(String.valueOf(cartId), PRODUCT_ID));
+        
+        verify(cartRepository, times(1)).findById(cartId);
+        verify(productFeignClient, times(1)).getProductById(PRODUCT_ID);
+        verify(cartRepository, never()).save(any(Cart.class));
     }
 }
 

@@ -47,6 +47,7 @@ public class CustomerServiceImpl implements CustomerService {
         String token = jwtUtil.generateToken(customer.getEmail(), customer.getEmail());
 
         return AuthResponse.builder()
+                .userId(customer.getId())
                 .token(token)
                 .email(customer.getEmail())
                 .username(customer.getUsername())
@@ -68,6 +69,7 @@ public class CustomerServiceImpl implements CustomerService {
         String token = jwtUtil.generateToken(customer.getEmail(), customer.getEmail());
 
         return AuthResponse.builder()
+                .userId(customer.getId())
                 .token(token)
                 .email(customer.getEmail())
                 .username(customer.getUsername())

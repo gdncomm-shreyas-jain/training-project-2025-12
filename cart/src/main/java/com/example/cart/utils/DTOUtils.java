@@ -2,6 +2,7 @@ package com.example.cart.utils;
 
 import com.example.cart.dto.CartDTO;
 import com.example.cart.dto.ProductDTO;
+import com.example.cart.dto.response.ProductServiceResponse;
 import com.example.cart.entity.Cart;
 import com.example.cart.entity.Product;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,13 @@ public final class DTOUtils {
         Product targetEntity = new Product();
         BeanUtils.copyProperties(srcProductDTO, targetEntity);
         log.debug("getEntity():: srcProductDTO - {}, targetEntity - {}", srcProductDTO, targetEntity);
+        return targetEntity;
+    }
+
+    public static Product getEntity(ProductServiceResponse productServiceResponse) {
+        Product targetEntity = new Product();
+        BeanUtils.copyProperties(productServiceResponse, targetEntity);
+        log.debug("getEntity():: productServiceResponse - {}, targetEntity - {}", productServiceResponse, targetEntity);
         return targetEntity;
     }
 

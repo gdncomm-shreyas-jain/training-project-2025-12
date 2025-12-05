@@ -13,6 +13,9 @@ public interface ProductService {
     ProductDTO updateProduct(ObjectId id, ProductDTO productDTO);
     void deleteProduct(ObjectId id);
 
+    // Bulk operations
+    List<ProductDTO> bulkCreateProducts(List<ProductDTO> productDTOs);
+
     // implement search level PLP to get the products
     List<ProductDTO> searchProducts(String productName, Pageable pageable);
     List<ProductDTO> searchProducts(String productName, String category, Pageable pageable);

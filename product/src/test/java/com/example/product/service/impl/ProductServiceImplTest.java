@@ -2,6 +2,7 @@ package com.example.product.service.impl;
 
 import com.example.product.dto.request.ProductDTO;
 import com.example.product.entity.Product;
+import com.example.product.exception.ProductNotFoundException;
 import com.example.product.repository.ProductRepository;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
@@ -108,16 +109,17 @@ class ProductServiceImplTest {
     }
 
     @Test
-    @DisplayName("Should return null when product does not exist")
+    @DisplayName("Should throw ProductNotFoundException when product does not exist")
     void testGetProductWhenProductDoesNotExist() {
         // Given
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
-        // When
-        ProductDTO result = productService.getProduct(productId);
-
-        // Then
-        assertNull(result);
+        // When & Then
+        ProductNotFoundException exception = assertThrows(ProductNotFoundException.class, 
+            () -> productService.getProduct(productId));
+        
+        assertNotNull(exception);
+        assertTrue(exception.getMessage().contains("Product not found with id:"));
         verify(productRepository, times(1)).findById(productId);
     }
 
@@ -157,7 +159,7 @@ class ProductServiceImplTest {
     }
 
     @Test
-    @DisplayName("Should return null when updating non-existent product")
+    @DisplayName("Should throw ProductNotFoundException when updating non-existent product")
     void testUpdateProductWhenProductDoesNotExist() {
         // Given
         ProductDTO updatedDTO = new ProductDTO();
@@ -166,10 +168,13 @@ class ProductServiceImplTest {
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         // When
-        ProductDTO result = productService.updateProduct(productId, updatedDTO);
+        ProductNotFoundException exception = assertThrows(
+                ProductNotFoundException.class,
+                () -> productService.updateProduct(productId, updatedDTO)
+        );
 
         // Then
-        assertNull(result);
+        assertNotNull(exception);
         verify(productRepository, times(1)).findById(productId);
         verify(productRepository, never()).save(any(Product.class));
     }
